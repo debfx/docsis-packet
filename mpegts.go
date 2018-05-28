@@ -1,0 +1,88 @@
+package main
+
+import (
+	"bytes"
+	"encoding/binary"
+)
+
+type processPacket func(packet []byte)
+
+const packetSize = 188
+
+func payloadUnitStartIndicator(packet []byte) bool {
+	return (packet[1] & 0x040) != 0 // 0b1000000
+}
+
+func assemblePacket(buffer *bytes.Buffer, data []byte, fn processPacket) {
+	dataLen := len(data)
+
+	if dataLen != 188 {
+		return
+	}
+
+	// the pointer field defines the end of the first payload packet if it's the last
+	// part of a payload packet that's split across multiple TS packets
+	// otherwise the field is 0
+	pointerField := data[4]
+	// skip header
+	curIndex := 5
+
+	// check for sync byte
+	if data[0] != 0x47 {
+		return
+	}
+
+	if pointerField != 0 {
+		// we have encountered the trailing part of a packet
+		buffer.Write(data[curIndex : curIndex+int(pointerField)])
+		fn(buffer.Bytes())
+		buffer.Reset()
+		curIndex += int(pointerField)
+	}
+
+	for {
+		// skip any stuffing bytes
+		for ; curIndex < dataLen && data[curIndex] == 0xff; curIndex++ {
+		}
+		if curIndex == dataLen {
+			// end of TS packet reached
+			return
+		}
+
+		if dataLen >= (curIndex + 4) {
+			// peek into the length field of the payload (DOCSIS) packet
+			lengthField := int(binary.BigEndian.Uint16(data[curIndex+2 : curIndex+4]))
+			// the length field specifies the number of bytes of extended header + payload
+			// add 6 (header length) to get the full length
+			end := curIndex + lengthField + 6
+
+			// if we have the whole packet, process it now
+			if end < dataLen {
+				// we've encountered a comlete payload packet
+				// parse and then continue to scan for another packet
+				buffer.Write(data[curIndex:end])
+				fn(buffer.Bytes())
+				buffer.Reset()
+				curIndex = end
+				continue
+			}
+		}
+
+		// this is an incomplete payload packet
+		// the remaining parts are in the next TS packets
+		buffer.Write(data[curIndex:])
+		return
+	}
+}
+
+func readPacket(buffer *bytes.Buffer, packet []byte, fn processPacket) {
+	if payloadUnitStartIndicator(packet) {
+		// TS packet contains a payload packet border
+		// we need to properly parse the packet
+		assemblePacket(buffer, packet, fn)
+	} else {
+		// we are in the middle of a payload packet
+		// just fill our buffer while ignoring the TS header
+		buffer.Write(packet[4:])
+	}
+}
