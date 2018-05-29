@@ -95,7 +95,10 @@ func (docsis *DOCSIS) NextLayerType() gopacket.LayerType {
 
 func decodeDOCSIS(data []byte, p gopacket.PacketBuilder) error {
 	docsis := &DOCSIS{}
-	docsis.DecodeFromBytes(data, p)
+	err := docsis.DecodeFromBytes(data, p)
+	if err != nil {
+		return err
+	}
 	p.AddLayer(docsis)
 
 	return p.NextDecoder(docsis.NextLayerType())

@@ -45,7 +45,10 @@ func (ethenc *ETHENC) CanDecode() gopacket.LayerClass {
 
 func decodeETHENC(data []byte, p gopacket.PacketBuilder) error {
 	ethenc := &ETHENC{}
-	ethenc.DecodeFromBytes(data, p)
+	err := ethenc.DecodeFromBytes(data, p)
+	if err != nil {
+		return err
+	}
 	p.AddLayer(ethenc)
 	return p.NextDecoder(gopacket.LayerTypePayload)
 }
