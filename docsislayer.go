@@ -17,8 +17,9 @@ type DOCSIS struct {
 	layers.BaseLayer
 	FCType               uint8
 	FCParm               uint8
-	ExtHdr               bool
-	ExtHdrData           []byte
+	ExtHdrPresent        bool
+	ExtHdr               []byte
+	Encrypted            bool
 	CheckSequence        uint16
 	CheckSequenceCorrect bool
 }
@@ -34,9 +35,9 @@ func (docsis *DOCSIS) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) e
 		return errors.New("docsis packet too small")
 	}
 
-	docsis.FCType = (data[0] & 0xc0) >> 6 // 0b11000000
-	docsis.FCParm = (data[0] & 0x3e) >> 1 // 0b00111110
-	docsis.ExtHdr = (data[0] & 0x01) == 1 // 0b00000001
+	docsis.FCType = (data[0] & 0xc0) >> 6        // 0b11000000
+	docsis.FCParm = (data[0] & 0x3e) >> 1        // 0b00111110
+	docsis.ExtHdrPresent = (data[0] & 0x01) == 1 // 0b00000001
 
 	// skip header for payload
 	payloadStart := uint16(6)
@@ -47,9 +48,28 @@ func (docsis *DOCSIS) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) e
 		return errors.New("docsis packet smaller than advertised by header")
 	}
 
-	if docsis.ExtHdr {
+	if docsis.ExtHdrPresent {
+		ehdrStart := payloadStart - 2
 		// skip extender header for payload
 		payloadStart += uint16(data[1])
+		ehdrEnd := payloadStart - 2
+
+		var ehdrLen uint16
+		for i := ehdrStart; i < ehdrEnd; i += ehdrLen {
+			ehdrType := (data[i] & 0xf0) >> 4
+			ehdrLen = uint16((data[i] & 0x0f) + 1)
+
+			if (i + ehdrLen) > ehdrEnd {
+				return errors.New("docsis packet has a corrupt extended header")
+			}
+
+			// TODO: properly parse extended headers
+			docsis.ExtHdr = append(docsis.ExtHdr, ehdrType)
+
+			if ehdrType == 4 && (data[i+2]&0x80) == 0x80 {
+				docsis.Encrypted = true
+			}
+		}
 	}
 
 	docsis.CheckSequence = binary.BigEndian.Uint16(data[payloadStart-2 : payloadStart])
@@ -80,8 +100,7 @@ func (docsis *DOCSIS) NextLayerType() gopacket.LayerType {
 	}
 
 	if docsis.FCParm == 0 && docsis.FCType == 0 {
-		// TODO: actually check the header fields for encryption
-		if docsis.ExtHdr {
+		if docsis.Encrypted {
 			return LayerTypeETHENC
 		}
 
