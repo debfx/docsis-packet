@@ -106,7 +106,7 @@ func (docsis *DOCSIS) NextLayerType() gopacket.LayerType {
 
 		return layers.LayerTypeEthernet
 	} else if docsis.FCParm == 1 {
-		// TODO management
+		return LayerTypeDOCSISManagement
 	}
 
 	return gopacket.LayerTypePayload
