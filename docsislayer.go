@@ -101,13 +101,13 @@ func (docsis *DOCSIS) NextLayerType() gopacket.LayerType {
 		return gopacket.LayerTypePayload
 	}
 
-	if docsis.FCParm == 0 && docsis.FCType == 0 {
+	if docsis.FCType == 0 && docsis.FCParm == 0 {
 		if docsis.Encrypted {
 			return LayerTypeETHENC
 		}
 
 		return layers.LayerTypeEthernet
-	} else if docsis.FCParm == 1 {
+	} else if docsis.FCType == 3 {
 		return LayerTypeDOCSISManagement
 	}
 
