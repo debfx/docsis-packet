@@ -38,6 +38,8 @@ func (docsis *DOCSIS) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) e
 	docsis.FCType = (data[0] & 0xc0) >> 6        // 0b11000000
 	docsis.FCParm = (data[0] & 0x3e) >> 1        // 0b00111110
 	docsis.ExtHdrPresent = (data[0] & 0x01) == 1 // 0b00000001
+	docsis.ExtHdr = docsis.ExtHdr[:0]
+	docsis.Encrypted = false
 
 	// skip header for payload
 	payloadStart := uint16(6)
