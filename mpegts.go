@@ -20,17 +20,17 @@ func assemblePacket(buffer *bytes.Buffer, data []byte, fn processPacket) {
 		return
 	}
 
+	// check for sync byte
+	if data[0] != 0x47 {
+		return
+	}
+
 	// the pointer field defines the end of the first payload packet if it's the last
 	// part of a payload packet that's split across multiple TS packets
 	// otherwise the field is 0
 	pointerField := data[4]
 	// skip header
 	curIndex := 5
-
-	// check for sync byte
-	if data[0] != 0x47 {
-		return
-	}
 
 	if pointerField != 0 {
 		// we have encountered the trailing part of a packet
