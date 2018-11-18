@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
+	"context"
 	"encoding/binary"
+	"io"
 )
 
 type processPacket func(packet []byte)
@@ -85,4 +88,31 @@ func readPacket(buffer *bytes.Buffer, packet []byte, fn processPacket) {
 		// just fill our buffer while ignoring the TS header
 		buffer.Write(packet[4:])
 	}
+}
+
+func readPacketLoop(ctx context.Context, inputReader io.Reader, fn processPacket) error {
+	var buffer bytes.Buffer
+	packet := make([]byte, packetSize)
+	// large enough buffer to avoid too much syscall overhead through small reads
+	bufferedReader := bufio.NewReaderSize(inputReader, 25*packetSize)
+
+	var err error
+	var read int
+	i := 0
+	for read, err = io.ReadFull(bufferedReader, packet); read > 0 && err == nil; read, err = io.ReadFull(bufferedReader, packet) {
+		readPacket(&buffer, packet, fn)
+
+		if i%10 == 0 {
+			select {
+			case <-ctx.Done():
+				// ctx is canceled
+				return ctx.Err()
+			default:
+				// ctx is not canceled, continue immediately
+			}
+		}
+		i++
+	}
+
+	return err
 }
