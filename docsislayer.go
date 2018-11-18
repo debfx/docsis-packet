@@ -38,30 +38,32 @@ func (docsis *DOCSIS) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) e
 	docsis.FCType = (data[0] & 0xc0) >> 6        // 0b11000000
 	docsis.FCParm = (data[0] & 0x3e) >> 1        // 0b00111110
 	docsis.ExtHdrPresent = (data[0] & 0x01) == 1 // 0b00000001
+
+	// reset attributes
 	docsis.ExtHdr = docsis.ExtHdr[:0]
 	docsis.Encrypted = false
 
 	// skip header for payload
-	payloadStart := uint16(6)
+	payloadStart := uint(6)
 	// length field defines the length of extender header + payload
-	payloadEnd := int(payloadStart + binary.BigEndian.Uint16(data[2:4]))
+	payloadEnd := uint(payloadStart + uint(binary.BigEndian.Uint16(data[2:4])))
 
-	if len(data) < payloadEnd {
+	if uint(len(data)) < payloadEnd {
 		return errors.New("docsis packet smaller than advertised by header")
 	}
 
 	if docsis.ExtHdrPresent {
 		ehdrStart := payloadStart - 2
 		// skip extender header for payload
-		payloadStart += uint16(data[1])
+		payloadStart += uint(data[1])
 		ehdrEnd := payloadStart - 2
 
-		var ehdrLen uint16
+		var ehdrLen uint
 		for i := ehdrStart; i < ehdrEnd; i += ehdrLen {
 			ehdrType := (data[i] & 0xf0) >> 4
-			ehdrLen = uint16((data[i] & 0x0f) + 1)
+			ehdrLen = uint(data[i]&0x0f) + 1
 
-			if (i + ehdrLen) > ehdrEnd {
+			if ehdrEnd < (i + ehdrLen) {
 				return errors.New("docsis packet has a corrupt extended header")
 			}
 
