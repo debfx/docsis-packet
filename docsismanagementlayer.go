@@ -12,6 +12,15 @@ import (
 // LayerTypeDOCSISManagement type registration
 var LayerTypeDOCSISManagement = gopacket.RegisterLayerType(1002, gopacket.LayerTypeMetadata{Name: "DOCSIS Management", Decoder: gopacket.DecodeFunc(decodeDOCSISManagement)})
 
+// DocsisManagementRegRsp code for DOCSIS Management Registration Response
+const DocsisManagementRegRsp = 7
+
+// DocsisManagementBpkmRsp code for Baseline Privacy Key Management Response
+const DocsisManagementBpkmRsp = 13
+
+// DocsisManagementRegRspMp code for DOCSIS Management Multipart Registration Response
+const DocsisManagementRegRspMp = 45
+
 // DOCSISManagement is a DOCSIS Management packet header.
 type DOCSISManagement struct {
 	layers.BaseLayer
@@ -67,6 +76,14 @@ func (docsisManagement *DOCSISManagement) CanDecode() gopacket.LayerClass {
 
 // NextLayerType returns the layer type contained by this DecodingLayer.
 func (docsisManagement *DOCSISManagement) NextLayerType() gopacket.LayerType {
+	if docsisManagement.Type == DocsisManagementRegRsp {
+		return LayerTypeDOCSISRegRsp
+	} else if docsisManagement.Type == DocsisManagementBpkmRsp {
+		return LayerTypeDOCSISBpkmRsp
+	} else if docsisManagement.Type == DocsisManagementRegRspMp {
+		return LayerTypeDOCSISRegRspMp
+	}
+
 	return gopacket.LayerTypePayload
 }
 
