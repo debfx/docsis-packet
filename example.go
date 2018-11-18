@@ -18,8 +18,8 @@ import (
 
 var docsis DOCSIS
 var docsisManagement DOCSISManagement
-var docsisRegRspMp DOCSISRegEspMp
-var docsisRegRsp DOCSISRegEsp
+var docsisRegRspMp DOCSISRegRspMp
+var docsisRegRsp DOCSISRegRsp
 var parser = gopacket.NewDecodingLayerParser(LayerTypeDOCSIS, &docsis, &docsisManagement, &docsisRegRsp, &docsisRegRspMp)
 var decoded = []gopacket.LayerType{}
 

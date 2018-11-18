@@ -11,8 +11,8 @@ import (
 // LayerTypeDOCSISRegRsp type registration
 var LayerTypeDOCSISRegRsp = gopacket.RegisterLayerType(1005, gopacket.LayerTypeMetadata{Name: "DOCSIS Management Registration Response", Decoder: gopacket.DecodeFunc(decodeDOCSISRegRsp)})
 
-// DOCSISRegEsp is a DOCSIS Management packet header.
-type DOCSISRegEsp struct {
+// DOCSISRegRsp is a DOCSIS Management packet header.
+type DOCSISRegRsp struct {
 	layers.BaseLayer
 	Sid               uint16
 	Response          byte
@@ -23,12 +23,12 @@ type DOCSISRegEsp struct {
 }
 
 // LayerType returns LayerTypeDOCSISRegRsp
-func (docsis *DOCSISRegEsp) LayerType() gopacket.LayerType {
+func (docsis *DOCSISRegRsp) LayerType() gopacket.LayerType {
 	return LayerTypeDOCSISRegRsp
 }
 
 // DecodeFromBytes decodes the given bytes into this layer.
-func (docsis *DOCSISRegEsp) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
+func (docsis *DOCSISRegRsp) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	if len(data) < 5 {
 		return errors.New("docsis bpkm resp packet is too small for the header")
 	}
@@ -106,17 +106,17 @@ func parseTLV(tlv []byte) (uint32, uint32, error) {
 }
 
 // CanDecode returns the set of layer types that this DecodingLayer can decode.
-func (docsis *DOCSISRegEsp) CanDecode() gopacket.LayerClass {
+func (docsis *DOCSISRegRsp) CanDecode() gopacket.LayerClass {
 	return LayerTypeDOCSISRegRsp
 }
 
 // NextLayerType returns the layer type contained by this DecodingLayer.
-func (docsis *DOCSISRegEsp) NextLayerType() gopacket.LayerType {
+func (docsis *DOCSISRegRsp) NextLayerType() gopacket.LayerType {
 	return gopacket.LayerTypePayload
 }
 
 func decodeDOCSISRegRsp(data []byte, p gopacket.PacketBuilder) error {
-	docsis := &DOCSISRegEsp{}
+	docsis := &DOCSISRegRsp{}
 	err := docsis.DecodeFromBytes(data, p)
 	if err != nil {
 		return err
