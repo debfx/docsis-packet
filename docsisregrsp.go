@@ -72,6 +72,11 @@ func (docsis *DOCSISBaseRegRsp) parseTLV(tlv []byte) error {
 			return errors.New("tlv too small")
 		}
 
+		// only parse inner structure if the tlvType has one and we are interested in the content
+		if tlvType != 5 && tlvType != 24 && tlvType != 25 {
+			continue
+		}
+
 		tlvInner := tlv[i+2 : i+2+tlvTypeLen]
 		var tlvInnerTypeLen int
 		var flowRef uint16
