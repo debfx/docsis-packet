@@ -78,14 +78,12 @@ func (docsis *DOCSISBaseRegRsp) parseTLV(tlv []byte) error {
 		var maxSustainedRate uint32
 		for j := 0; j < len(tlvInner); j += tlvInnerTypeLen + 2 {
 			if len(tlvInner) < (j + 2) {
-				// tlv inner header too small, packet broken or type has no inner subtype
-				break
+				return errors.New("tlv inner header too small")
 			}
 			tlvInnerType := tlvInner[j]
 			tlvInnerTypeLen = int(tlvInner[j+1])
 			if len(tlvInner) < (j + 2 + tlvInnerTypeLen) {
-				// tlv inner too small, packet broken or type has no inner subtype
-				break
+				return errors.New("tlv inner too small")
 			}
 
 			innerData := tlvInner[j+2 : j+2+tlvInnerTypeLen]
