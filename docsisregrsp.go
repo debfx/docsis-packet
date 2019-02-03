@@ -62,7 +62,7 @@ func (docsis *DOCSISBaseRegRsp) parseTLV(tlv []byte) error {
 
 	var tlvTypeLen int
 	for i := 0; i < len(tlv); i += tlvTypeLen + 2 {
-		if len(tlv) <= (i + 1) {
+		if len(tlv) < (i + 2) {
 			return errors.New("tlv header too small")
 		}
 
@@ -77,12 +77,12 @@ func (docsis *DOCSISBaseRegRsp) parseTLV(tlv []byte) error {
 		var flowRef uint16
 		var maxSustainedRate uint32
 		for j := 0; j < len(tlvInner); j += tlvInnerTypeLen + 2 {
-			if len(tlv) <= (j + 1) {
+			if len(tlvInner) < (j + 2) {
 				return errors.New("tlv inner header too small")
 			}
 			tlvInnerType := tlvInner[j]
 			tlvInnerTypeLen = int(tlvInner[j+1])
-			if len(tlv) < (j + 2 + tlvInnerTypeLen) {
+			if len(tlvInner) < (j + 2 + tlvInnerTypeLen) {
 				return errors.New("tlv inner too small")
 			}
 
