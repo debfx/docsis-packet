@@ -56,8 +56,8 @@ func (docsisManagement *DOCSISManagement) DecodeFromBytes(data []byte, df gopack
 	docsisManagement.Reserved = data[19]
 
 	payloadStart := 20
-	// len(DstMAC) + len(SrcMAC) + MessageLength + 1
-	payloadEnd := int(12 + docsisManagement.MessageLength + 1)
+	// len(DstMAC) + len(SrcMAC) + len(MessageLength) + MessageLength
+	payloadEnd := int(6 + 6 + 2 + docsisManagement.MessageLength)
 
 	if len(data) < payloadEnd {
 		return errors.New("docsis management packet is too small for the payload")
