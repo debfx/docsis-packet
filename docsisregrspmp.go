@@ -14,12 +14,9 @@ var LayerTypeDOCSISRegRspMp = gopacket.RegisterLayerType(1004, gopacket.LayerTyp
 // DOCSISRegRspMp is a DOCSIS Management packet header.
 type DOCSISRegRspMp struct {
 	layers.BaseLayer
-	Sid               uint16
-	Response          byte
-	FragmentsTotal    byte
-	FragmentNumber    byte
-	DownstreamMaxRate uint32
-	UpstreamMaxRate   uint32
+	DOCSISBaseRegRsp
+	FragmentsTotal byte
+	FragmentNumber byte
 }
 
 // LayerType returns LayerTypeDOCSISRegRspMp
@@ -39,7 +36,7 @@ func (docsis *DOCSISRegRspMp) DecodeFromBytes(data []byte, df gopacket.DecodeFee
 	docsis.FragmentNumber = data[4]
 
 	var err error
-	docsis.DownstreamMaxRate, docsis.UpstreamMaxRate, err = parseTLV(data[5:])
+	err = docsis.parseTLV(data[5:])
 	if err != nil {
 		return err
 	}

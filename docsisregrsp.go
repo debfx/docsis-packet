@@ -11,15 +11,20 @@ import (
 // LayerTypeDOCSISRegRsp type registration
 var LayerTypeDOCSISRegRsp = gopacket.RegisterLayerType(1005, gopacket.LayerTypeMetadata{Name: "DOCSIS Management Registration Response", Decoder: gopacket.DecodeFunc(decodeDOCSISRegRsp)})
 
+type DOCSISBaseRegRsp struct {
+	Sid                uint16
+	Response           byte
+	DocsisVersion      byte
+	UpstreamChannels   byte
+	DownstreamChannels byte
+	DownstreamMaxRate  uint32
+	UpstreamMaxRate    uint32
+}
+
 // DOCSISRegRsp is a DOCSIS Management packet header.
 type DOCSISRegRsp struct {
 	layers.BaseLayer
-	Sid               uint16
-	Response          byte
-	FragmentsTotal    byte
-	FragmentNumber    byte
-	DownstreamMaxRate uint32
-	UpstreamMaxRate   uint32
+	DOCSISBaseRegRsp
 }
 
 // LayerType returns LayerTypeDOCSISRegRsp
@@ -37,7 +42,7 @@ func (docsis *DOCSISRegRsp) DecodeFromBytes(data []byte, df gopacket.DecodeFeedb
 	docsis.Response = data[2]
 
 	var err error
-	docsis.DownstreamMaxRate, docsis.UpstreamMaxRate, err = parseTLV(data[3:])
+	err = docsis.parseTLV(data[3:])
 	if err != nil {
 		return err
 	}
@@ -48,20 +53,23 @@ func (docsis *DOCSISRegRsp) DecodeFromBytes(data []byte, df gopacket.DecodeFeedb
 	return nil
 }
 
-func parseTLV(tlv []byte) (uint32, uint32, error) {
+func (docsis *DOCSISBaseRegRsp) parseTLV(tlv []byte) error {
+	docsisVersion := byte(0)
+	upstreamChannels := byte(0)
+	downstreamChannels := byte(0)
 	upstreamMaxRate := uint32(0)
 	downstreamMaxRate := uint32(0)
 
 	var tlvTypeLen int
 	for i := 0; i < len(tlv); i += tlvTypeLen + 2 {
 		if len(tlv) <= (i + 1) {
-			return 0, 0, errors.New("tlv header too small")
+			return errors.New("tlv header too small")
 		}
 
 		tlvType := tlv[i]
 		tlvTypeLen = int(tlv[i+1])
 		if len(tlv) < (i + 2 + tlvTypeLen) {
-			return 0, 0, errors.New("tlv too small")
+			return errors.New("tlv too small")
 		}
 
 		tlvInner := tlv[i+2 : i+2+tlvTypeLen]
@@ -70,25 +78,42 @@ func parseTLV(tlv []byte) (uint32, uint32, error) {
 		var maxSustainedRate uint32
 		for j := 0; j < len(tlvInner); j += tlvInnerTypeLen + 2 {
 			if len(tlv) <= (j + 1) {
-				return 0, 0, errors.New("tlv inner header too small")
+				return errors.New("tlv inner header too small")
 			}
 			tlvInnerType := tlvInner[j]
 			tlvInnerTypeLen = int(tlvInner[j+1])
 			if len(tlv) < (j + 2 + tlvInnerTypeLen) {
-				return 0, 0, errors.New("tlv inner too small")
+				return errors.New("tlv inner too small")
 			}
 
 			innerData := tlvInner[j+2 : j+2+tlvInnerTypeLen]
 
-			if tlvType == 24 || tlvType == 25 {
+			if tlvType == 5 {
+				if tlvInnerType == 2 {
+					if tlvInnerTypeLen != 1 {
+						return errors.New("docsis reg esp tlv inner type len too small")
+					}
+					docsisVersion = innerData[0]
+				} else if tlvInnerType == 24 {
+					if tlvInnerTypeLen != 1 {
+						return errors.New("docsis reg esp tlv inner type len too small")
+					}
+					upstreamChannels = innerData[0]
+				} else if tlvInnerType == 29 {
+					if tlvInnerTypeLen != 1 {
+						return errors.New("docsis reg esp tlv inner type len too small")
+					}
+					downstreamChannels = innerData[0]
+				}
+			} else if tlvType == 24 || tlvType == 25 {
 				if tlvInnerType == 1 {
 					if tlvInnerTypeLen != 2 {
-						return 0, 0, errors.New("docsis reg esp tlv inner type len too small")
+						return errors.New("docsis reg esp tlv inner type len too small")
 					}
 					flowRef = binary.BigEndian.Uint16(innerData)
 				} else if tlvInnerType == 8 {
 					if tlvInnerTypeLen != 4 {
-						return 0, 0, errors.New("docsis reg esp tlv inner type len too small")
+						return errors.New("docsis reg esp tlv inner type len too small")
 					}
 					maxSustainedRate = binary.BigEndian.Uint32(innerData)
 				}
@@ -102,7 +127,13 @@ func parseTLV(tlv []byte) (uint32, uint32, error) {
 		}
 	}
 
-	return downstreamMaxRate, upstreamMaxRate, nil
+	docsis.DocsisVersion = docsisVersion
+	docsis.UpstreamChannels = upstreamChannels
+	docsis.DownstreamChannels = downstreamChannels
+	docsis.UpstreamMaxRate = upstreamMaxRate
+	docsis.DownstreamMaxRate = downstreamMaxRate
+
+	return nil
 }
 
 // CanDecode returns the set of layer types that this DecodingLayer can decode.
