@@ -37,6 +37,10 @@ func assemblePacket(buffer *bytes.Buffer, data []byte, fn processPacket) {
 
 	if pointerField != 0 {
 		// we have encountered the trailing part of a packet
+		if dataLen < (curIndex + int(pointerField)) {
+			buffer.Reset()
+			return
+		}
 		buffer.Write(data[curIndex : curIndex+int(pointerField)])
 		fn(buffer.Bytes())
 		buffer.Reset()
