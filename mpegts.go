@@ -17,9 +17,7 @@ func payloadUnitStartIndicator(packet []byte) bool {
 }
 
 func assemblePacket(buffer *bytes.Buffer, data []byte, fn processPacket) {
-	dataLen := len(data)
-
-	if dataLen != 188 {
+	if len(data) != packetSize {
 		return
 	}
 
@@ -37,7 +35,7 @@ func assemblePacket(buffer *bytes.Buffer, data []byte, fn processPacket) {
 
 	if pointerField != 0 {
 		// we have encountered the trailing part of a packet
-		if dataLen < (curIndex + int(pointerField)) {
+		if packetSize < (curIndex + int(pointerField)) {
 			buffer.Reset()
 			return
 		}
@@ -49,14 +47,14 @@ func assemblePacket(buffer *bytes.Buffer, data []byte, fn processPacket) {
 
 	for {
 		// skip any stuffing bytes
-		for ; curIndex < dataLen && data[curIndex] == 0xff; curIndex++ {
+		for ; curIndex < packetSize && data[curIndex] == 0xff; curIndex++ {
 		}
-		if curIndex == dataLen {
+		if curIndex == packetSize {
 			// end of TS packet reached
 			return
 		}
 
-		if dataLen >= (curIndex + 4) {
+		if packetSize >= (curIndex + 4) {
 			// peek into the length field of the payload (DOCSIS) packet
 			lengthField := int(binary.BigEndian.Uint16(data[curIndex+2 : curIndex+4]))
 			// the length field specifies the number of bytes of extended header + payload
@@ -64,7 +62,7 @@ func assemblePacket(buffer *bytes.Buffer, data []byte, fn processPacket) {
 			end := curIndex + lengthField + 6
 
 			// if we have the whole packet, process it now
-			if end < dataLen {
+			if end < packetSize {
 				// we've encountered a comlete payload packet
 				// parse and then continue to scan for another packet
 				buffer.Write(data[curIndex:end])
