@@ -17,15 +17,6 @@ func payloadUnitStartIndicator(packet []byte) bool {
 }
 
 func assemblePacket(buffer *bytes.Buffer, data []byte, fn processPacket) {
-	if len(data) != packetSize {
-		return
-	}
-
-	// check for sync byte
-	if data[0] != 0x47 {
-		return
-	}
-
 	// the pointer field defines the end of the first payload packet if it's the last
 	// part of a payload packet that's split across multiple TS packets
 	// otherwise the field is 0
@@ -81,6 +72,15 @@ func assemblePacket(buffer *bytes.Buffer, data []byte, fn processPacket) {
 }
 
 func readPacket(buffer *bytes.Buffer, packet []byte, fn processPacket) {
+	if len(packet) != packetSize {
+		return
+	}
+
+	// check for sync byte
+	if packet[0] != 0x47 {
+		return
+	}
+
 	if payloadUnitStartIndicator(packet) {
 		// TS packet contains a payload packet border
 		// we need to properly parse the packet
