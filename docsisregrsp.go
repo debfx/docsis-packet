@@ -41,9 +41,7 @@ func (docsis *DOCSISRegRsp) DecodeFromBytes(data []byte, df gopacket.DecodeFeedb
 	docsis.Sid = binary.BigEndian.Uint16(data[0:2])
 	docsis.Response = data[2]
 
-	var err error
-	err = docsis.parseTLV(data[3:])
-	if err != nil {
+	if err := docsis.parseTLV(data[3:]); err != nil {
 		return err
 	}
 

@@ -35,9 +35,7 @@ func (docsis *DOCSISRegRspMp) DecodeFromBytes(data []byte, df gopacket.DecodeFee
 	docsis.FragmentsTotal = data[3]
 	docsis.FragmentNumber = data[4]
 
-	var err error
-	err = docsis.parseTLV(data[5:])
-	if err != nil {
+	if err := docsis.parseTLV(data[5:]); err != nil {
 		return err
 	}
 
