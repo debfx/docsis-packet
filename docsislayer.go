@@ -58,6 +58,10 @@ func (docsis *DOCSIS) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) e
 		payloadStart += uint(data[1])
 		ehdrEnd := payloadStart - 2
 
+		if payloadStart > payloadEnd {
+			return errors.New("docsis packet has an invalid extender header length")
+		}
+
 		var ehdrLen uint
 		for i := ehdrStart; i < ehdrEnd; i += ehdrLen {
 			ehdrType := (data[i] & 0xf0) >> 4
@@ -70,7 +74,7 @@ func (docsis *DOCSIS) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) e
 			// TODO: properly parse extended headers
 			docsis.ExtHdr = append(docsis.ExtHdr, ehdrType)
 
-			if ehdrType == 4 && (data[i+2]&0x80) == 0x80 {
+			if ehdrType == 4 && ehdrLen >= 3 && (data[i+2]&0x80) == 0x80 {
 				docsis.Encrypted = true
 			}
 		}
