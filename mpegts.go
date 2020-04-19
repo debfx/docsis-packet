@@ -96,7 +96,7 @@ func readPacketLoop(ctx context.Context, inputReader io.Reader, fn processPacket
 	var buffer bytes.Buffer
 	packet := make([]byte, packetSize)
 	// large enough buffer to avoid too much syscall overhead through small reads
-	bufferedReader := bufio.NewReaderSize(inputReader, 25*packetSize)
+	bufferedReader := bufio.NewReaderSize(inputReader, 100*packetSize)
 
 	var err error
 	var read int
@@ -104,7 +104,7 @@ func readPacketLoop(ctx context.Context, inputReader io.Reader, fn processPacket
 	for read, err = io.ReadFull(bufferedReader, packet); read > 0 && err == nil; read, err = io.ReadFull(bufferedReader, packet) {
 		readPacket(&buffer, packet, fn)
 
-		if i%10 == 0 {
+		if i%5 == 0 {
 			select {
 			case <-ctx.Done():
 				// ctx is canceled
