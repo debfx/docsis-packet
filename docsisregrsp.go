@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/binary"
-	"errors"
+	"fmt"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -35,7 +35,7 @@ func (docsis *DOCSISRegRsp) LayerType() gopacket.LayerType {
 // DecodeFromBytes decodes the given bytes into this layer.
 func (docsis *DOCSISRegRsp) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	if len(data) < 5 {
-		return errors.New("docsis bpkm resp packet is too small for the header")
+		return fmt.Errorf("docsis bpkm resp packet is too small for the header")
 	}
 
 	docsis.Sid = binary.BigEndian.Uint16(data[0:2])
@@ -61,13 +61,13 @@ func (docsis *DOCSISBaseRegRsp) parseTLV(tlv []byte) error {
 	var tlvTypeLen int
 	for i := 0; i < len(tlv); i += tlvTypeLen + 2 {
 		if len(tlv) < (i + 2) {
-			return errors.New("tlv header too small")
+			return fmt.Errorf("tlv header too small")
 		}
 
 		tlvType := tlv[i]
 		tlvTypeLen = int(tlv[i+1])
 		if len(tlv) < (i + 2 + tlvTypeLen) {
-			return errors.New("tlv too small")
+			return fmt.Errorf("tlv too small")
 		}
 
 		// only parse inner structure if the tlvType has one and we are interested in the content
@@ -81,12 +81,12 @@ func (docsis *DOCSISBaseRegRsp) parseTLV(tlv []byte) error {
 		var maxSustainedRate uint32
 		for j := 0; j < len(tlvInner); j += tlvInnerTypeLen + 2 {
 			if len(tlvInner) < (j + 2) {
-				return errors.New("tlv inner header too small")
+				return fmt.Errorf("tlv inner header too small")
 			}
 			tlvInnerType := tlvInner[j]
 			tlvInnerTypeLen = int(tlvInner[j+1])
 			if len(tlvInner) < (j + 2 + tlvInnerTypeLen) {
-				return errors.New("tlv inner too small")
+				return fmt.Errorf("tlv inner too small")
 			}
 
 			innerData := tlvInner[j+2 : j+2+tlvInnerTypeLen]
@@ -94,29 +94,29 @@ func (docsis *DOCSISBaseRegRsp) parseTLV(tlv []byte) error {
 			if tlvType == 5 {
 				if tlvInnerType == 2 {
 					if tlvInnerTypeLen != 1 {
-						return errors.New("docsis reg esp tlv inner type len too small")
+						return fmt.Errorf("docsis reg esp tlv inner type len too small")
 					}
 					docsisVersion = innerData[0]
 				} else if tlvInnerType == 24 {
 					if tlvInnerTypeLen != 1 {
-						return errors.New("docsis reg esp tlv inner type len too small")
+						return fmt.Errorf("docsis reg esp tlv inner type len too small")
 					}
 					upstreamChannels = innerData[0]
 				} else if tlvInnerType == 29 {
 					if tlvInnerTypeLen != 1 {
-						return errors.New("docsis reg esp tlv inner type len too small")
+						return fmt.Errorf("docsis reg esp tlv inner type len too small")
 					}
 					downstreamChannels = innerData[0]
 				}
 			} else if tlvType == 24 || tlvType == 25 {
 				if tlvInnerType == 1 {
 					if tlvInnerTypeLen != 2 {
-						return errors.New("docsis reg esp tlv inner type len too small")
+						return fmt.Errorf("docsis reg esp tlv inner type len too small")
 					}
 					flowRef = binary.BigEndian.Uint16(innerData)
 				} else if tlvInnerType == 8 {
 					if tlvInnerTypeLen != 4 {
-						return errors.New("docsis reg esp tlv inner type len too small")
+						return fmt.Errorf("docsis reg esp tlv inner type len too small")
 					}
 					maxSustainedRate = binary.BigEndian.Uint32(innerData)
 				}

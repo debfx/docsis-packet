@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/binary"
-	"errors"
+	"fmt"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -32,7 +32,7 @@ func (docsis *DOCSIS) LayerType() gopacket.LayerType {
 // DecodeFromBytes decodes the given bytes into this layer.
 func (docsis *DOCSIS) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	if len(data) < 6 {
-		return errors.New("docsis packet too small")
+		return fmt.Errorf("docsis packet too small")
 	}
 
 	docsis.FCType = (data[0] & 0xc0) >> 6        // 0b11000000
@@ -49,7 +49,7 @@ func (docsis *DOCSIS) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) e
 	payloadEnd := uint(payloadStart + uint(binary.BigEndian.Uint16(data[2:4])))
 
 	if uint(len(data)) < payloadEnd {
-		return errors.New("docsis packet smaller than advertised by header")
+		return fmt.Errorf("docsis packet smaller than advertised by header")
 	}
 
 	if docsis.ExtHdrPresent {
@@ -59,7 +59,7 @@ func (docsis *DOCSIS) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) e
 		ehdrEnd := payloadStart - 2
 
 		if payloadStart > payloadEnd {
-			return errors.New("docsis packet has an invalid extender header length")
+			return fmt.Errorf("docsis packet has an invalid extender header length")
 		}
 
 		var ehdrLen uint
@@ -68,7 +68,7 @@ func (docsis *DOCSIS) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) e
 			ehdrLen = uint(data[i]&0x0f) + 1
 
 			if ehdrEnd < (i + ehdrLen) {
-				return errors.New("docsis packet has a corrupt extended header")
+				return fmt.Errorf("docsis packet has a corrupt extended header")
 			}
 
 			// TODO: properly parse extended headers
@@ -87,7 +87,7 @@ func (docsis *DOCSIS) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) e
 
 	docsis.CheckSequenceCorrect = (docsis.CheckSequence == checkSequenceCalculated)
 	if !docsis.CheckSequenceCorrect {
-		return errors.New("header check sequence doesn't match")
+		return fmt.Errorf("header check sequence doesn't match")
 	}
 
 	docsis.Contents = data[:payloadStart]

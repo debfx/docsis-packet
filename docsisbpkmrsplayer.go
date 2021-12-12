@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/binary"
-	"errors"
+	"fmt"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -30,7 +30,7 @@ func (docsis *DOCSISBpkmRsp) LayerType() gopacket.LayerType {
 // DecodeFromBytes decodes the given bytes into this layer.
 func (docsis *DOCSISBpkmRsp) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	if len(data) < 4 {
-		return errors.New("docsis bpkm resp packet is too small for the header")
+		return fmt.Errorf("docsis bpkm resp packet is too small for the header")
 	}
 
 	docsis.Code = data[0]

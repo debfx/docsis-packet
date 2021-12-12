@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/binary"
-	"errors"
+	"fmt"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -27,7 +27,7 @@ func (docsis *DOCSISRegRspMp) LayerType() gopacket.LayerType {
 // DecodeFromBytes decodes the given bytes into this layer.
 func (docsis *DOCSISRegRspMp) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	if len(data) < 5 {
-		return errors.New("docsis bpkm resp packet is too small for the header")
+		return fmt.Errorf("docsis bpkm resp packet is too small for the header")
 	}
 
 	docsis.Sid = binary.BigEndian.Uint16(data[0:2])

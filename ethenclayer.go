@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/binary"
-	"errors"
+	"fmt"
 	"net"
 
 	"github.com/google/gopacket"
@@ -27,7 +27,7 @@ func (ethenc *ETHENC) LayerType() gopacket.LayerType {
 // DecodeFromBytes decodes the given bytes into this layer.
 func (ethenc *ETHENC) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	if len(data) < 14 {
-		return errors.New("Ethernet packet too small")
+		return fmt.Errorf("Ethernet packet too small")
 	}
 
 	ethenc.DstMAC = net.HardwareAddr(data[0:6])

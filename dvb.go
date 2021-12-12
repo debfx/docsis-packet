@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -20,13 +19,13 @@ func waitForTune(fe frontend.Device, deadline time.Time) error {
 			return err
 		}
 		if timedout {
-			return errors.New("tuning timeout")
+			return fmt.Errorf("tuning timeout")
 		}
 	}
 	return nil
 }
 
-func tune(deviceNum int, ds dvb.DeliverySystem, m dvb.Modulation, freqHz uint32, bd uint32) error {
+func tune(deviceNum int, ds dvb.DeliverySystem, modulation dvb.Modulation, freqHz uint32, bd uint32) error {
 	fe, err := frontend.Open(fmt.Sprintf("/dev/dvb/adapter%d/frontend0", deviceNum))
 	if err != nil {
 		return err
@@ -36,7 +35,7 @@ func tune(deviceNum int, ds dvb.DeliverySystem, m dvb.Modulation, freqHz uint32,
 	if err = fe.SetDeliverySystem(ds); err != nil {
 		return err
 	}
-	if err = fe.SetModulation(m); err != nil {
+	if err = fe.SetModulation(modulation); err != nil {
 		return err
 	}
 	if err = fe.SetFrequency(freqHz); err != nil {
@@ -57,7 +56,7 @@ func tune(deviceNum int, ds dvb.DeliverySystem, m dvb.Modulation, freqHz uint32,
 	}
 
 	if err = waitForTune(fe, time.Now().Add(5*time.Second)); err != nil {
-		return err
+		return fmt.Errorf("failed to tune to modulation=%d freq=%d bd=%d: %w", modulation, freqHz, bd, err)
 	}
 
 	return nil

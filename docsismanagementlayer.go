@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/binary"
-	"errors"
+	"fmt"
 	"net"
 
 	"github.com/google/gopacket"
@@ -42,7 +42,7 @@ func (docsisManagement *DOCSISManagement) LayerType() gopacket.LayerType {
 // DecodeFromBytes decodes the given bytes into this layer.
 func (docsisManagement *DOCSISManagement) DecodeFromBytes(data []byte, df gopacket.DecodeFeedback) error {
 	if len(data) < 20 {
-		return errors.New("docsis management packet is too small for the header")
+		return fmt.Errorf("docsis management packet is too small for the header")
 	}
 
 	docsisManagement.DstMAC = net.HardwareAddr(data[0:6])
@@ -60,11 +60,11 @@ func (docsisManagement *DOCSISManagement) DecodeFromBytes(data []byte, df gopack
 	payloadEnd := int(6 + 6 + 2 + docsisManagement.MessageLength)
 
 	if payloadEnd < payloadStart {
-		return errors.New("docsis management packet message length header is too small")
+		return fmt.Errorf("docsis management packet message length header is too small")
 	}
 
 	if len(data) < payloadEnd {
-		return errors.New("docsis management packet is too small for the payload")
+		return fmt.Errorf("docsis management packet is too small for the payload")
 	}
 
 	docsisManagement.Contents = data[:payloadStart]
